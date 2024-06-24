@@ -1,0 +1,232 @@
+Get Worker Nodes Status
+Verify if kubernetes worker nodes are ready.
+# Get Worker Node Status
+> kubectl get nodes
+
+# Get Worker Node Status with wide option
+> kubectl get nodes -o wide
+
+Create a Pod
+# Template
+kubectl run <desired-pod-name> — image <Container-Image> — generator=run-pod/v1
+
+kubectl run my-first-pod --image stacksimplify/kubenginx:1.0.0
+List pods with wide option which also provide Node information on which Pod is running
+> kubectl get pods -o wide
+
+# To get list of pod names
+kubectl get pods
+
+# Describe the Pod
+kubectl describe pod <Pod-Name>
+kubectl describe pod my-first-pod
+Expose Pod with a Service
+Expose pod with a service (NodePort Service) to access the application externally (from internet)
+port: Port on which node port service listens in Kubernetes cluster internally
+targetPort: We define container port here on which our application is running.
+NodePort: Worker Node port on which we can access our application.
+
+# Expose Pod as a Service
+
+# Create  a Pod
+kubectl run <desired-pod-name> --image <Container-Image> --generator=run-pod/v1
+kubectl run my-first-pod --image stacksimplify/kubenginx:1.0.0 --generator=run-pod/v1
+
+# Expose Pod as a Service
+kubectl expose pod <Pod-Name>  --type=NodePort --port=80 --name=<Service-Name>
+kubectl expose pod my-first-pod  --type=NodePort --port=80 --name=my-first-service
+
+# Get Service Info
+kubectl get service
+kubectl get svc
+
+# Get Public IP of Worker Nodes
+kubectl get nodes -o wide
+Important Note about: target-port
+If target-port is not defined, by default and for convenience, the targetPort is set to the same value as the port field.
+
+# Below command will fail when accessing the application, as service port (81) and container port (80) are different
+kubectl expose pod my-first-pod  --type=NodePort --port=81 --name=my-first-service2     
+
+# Expose Pod as a Service with Container Port (--taret-port)
+kubectl expose pod my-first-pod  --type=NodePort --port=81 --target-port=80 --name=my-first-service3
+
+# Get Service Info
+kubectl get service
+kubectl get svc
+
+# Get Public IP of Worker Nodes
+kubectl get nodes -o wide
+Verify Pod Logs
+
+# Dump Pod logs
+kubectl logs <pod-name>
+kubectl logs my-first-pod
+
+# Stream pod logs with -f option and access application to see logs
+kubectl logs <pod-name>
+kubectl logs -f my-first-pod
+Connect to Container in a POD
+# Connect to Nginx Container in a POD
+kubectl exec -it <pod-name> -- /bin/bash
+kubectl exec -it my-first-pod -- /bin/bash
+
+# Execute some commands in Nginx container
+ls
+cd /usr/share/nginx/html
+cat index.html
+exit
+Running individual commands in a Container
+
+kubectl exec -it <pod-name> env
+
+# Sample Commands
+kubectl exec -it my-first-pod env
+kubectl exec -it my-first-pod ls
+kubectl exec -it my-first-pod cat /usr/share/nginx/html/index.html
+Clean up -
+
+# Delete Services
+kubectl delete svc my-first-service
+kubectl delete svc my-first-service2
+kubectl delete svc my-first-service3
+
+# Delete Pod
+kubectl delete pod my-first-pod
+Get YAML Output of Pod & Service
+# Get pod definition YAML output
+kubectl get pod my-first-pod -o yaml   
+
+# Get service definition YAML output
+kubectl get service my-first-service -o yaml
+Kubernetes — Deployment
+# Create Deployment
+kubectl create deployment <Deplyment-Name> --image=<Container-Image>
+kubectl create deployment my-first-deployment --image=stacksimplify/kubenginx:1.0.0 
+
+# Verify Deployment
+kubectl get deployments
+kubectl get deploy 
+
+# Describe Deployment
+kubectl describe deployment <deployment-name>
+kubectl describe deployment my-first-deployment
+Scaling a Deployment
+# Scale Up the Deployment
+kubectl scale --replicas=20 deployment/<Deployment-Name>
+kubectl scale --replicas=20 deployment/my-first-deployment 
+
+# Verify Deployment
+kubectl get deploy
+
+# Verify ReplicaSet
+kubectl get rs
+
+# Scale Down the Deployment
+kubectl scale --replicas=10 deployment/my-first-deployment 
+kubectl get deploy
+Expose Deployment as a Service -
+Expose Deployment with a service (NodePort Service) to access the application externally (from internet)
+# Expose Deployment as a Service
+kubectl expose deployment <Deployment-Name>  --type=NodePort --port=80 --target-port=80 --name=<Service-Name-To-Be-Created>
+kubectl expose deployment my-first-deployment --type=NodePort --port=80 --target-port=80 --name=my-first-deployment-service
+
+Access the Application using Public IP
+http://<worker-node-public-ip>:<Node-Port>
+Update Deployments
+Updating Application version V1 to V2 using “Set Image” Option -
+
+Observation: Please Check the container name in spec.container.name yaml output and make a note of it and replace in kubectl set image
+# Get Container Name from current deployment
+kubectl get deployment my-first-deployment -o yaml
+
+# Update Deployment - SHOULD WORK NOW
+kubectl set image deployment/<Deployment-Name> <Container-Name>=<Container-Image> --record=true
+kubectl set image deployment/my-first-deployment kubenginx=stacksimplify/kubenginx:2.0.0 --record=true
+Verify Rollout Status (Deployment Status)
+# Verify Rollout Status 
+kubectl rollout status deployment/my-first-deployment
+
+# Verify Deployment
+kubectl get deploy
+Verify Rollout History of a Deployment
+# Check the Rollout History of a Deployment
+kubectl rollout history deployment/<Deployment-Name>
+kubectl rollout history deployment/my-first-deployment
+Update the Application from V2 to V3 using “Edit Deployment” Option
+# Edit Deployment
+kubectl edit deployment/<Deployment-Name> --record=true
+kubectl edit deployment/my-first-deployment --record=true
+# Change From 2.0.0
+    spec:
+      containers:
+      - image: stacksimplify/kubenginx:2.0.0
+
+# Change To 3.0.0
+    spec:
+      containers:
+      - image: stacksimplify/kubenginx:3.0.0
+# Verify Rollout Status 
+kubectl rollout status deployment/my-first-deployment
+Rollback Deployment —
+Rollback a Deployment to previous version
+Check the Rollout History of a Deployment
+# List Deployment Rollout History
+kubectl rollout history deployment/<Deployment-Name>
+kubectl rollout history deployment/my-first-deployment
+Verify changes in each revision
+Observation: Review the “Annotations” and “Image” tags for clear understanding about changes.
+# List Deployment Rollout History
+kubectl rollout history deployment/<Deployment-Name>
+kubectl rollout history deployment/my-first-deployment  
+
+# List Deployment History with revision information
+kubectl rollout history deployment/my-first-deployment --revision=1
+kubectl rollout history deployment/my-first-deployment --revision=2
+kubectl rollout history deployment/my-first-deployment --revision=3
+Rollback to previous version
+Observation: If we rollback, it will go back to revision-2 and its number increases to revision-4
+# Undo Deployment
+kubectl rollout undo deployment/my-first-deployment
+
+# List Deployment Rollout History
+kubectl rollout history deployment/my-first-deployment  
+Rollback to specific revision
+# Rollback Deployment to Specific Revision
+kubectl rollout undo deployment/my-first-deployment --to-revision=3
+
+# List Deployment Rollout History
+kubectl rollout history deployment/my-first-deployment  
+Rolling Restarts of Application
+Rolling restarts will kill the existing pods and recreate new pods in a rolling fashion.
+# Rolling Restarts
+kubectl rollout restart deployment/<Deployment-Name>
+kubectl rollout restart deployment/my-first-deployment
+Pausing & Resuming Deployments
+Pause the Deployment
+kubectl rollout pause deployment/<Deployment-Name>
+kubectl rollout pause deployment/my-first-deployment
+
+# Update Deployment - Application Version from V3 to V4
+kubectl set image deployment/my-first-deployment kubenginx=stacksimplify/kubenginx:4.0.0 --record=true
+
+# Check the Rollout History of a Deployment
+kubectl rollout history deployment/my-first-deployment  
+Observation: No new rollout should start, we should see same number of versions as we check earlier with last version number matches which we have noted earlier.
+
+# Get list of ReplicaSets
+kubectl get rs
+Observation: No new replicaSet created. We should have same number of replicaSets as earlier when we took note. 
+
+# Make one more change: set limits to our container
+kubectl set resources deployment/my-first-deployment -c=kubenginx --limits=cpu=20m,memory=30Mi
+# Resume the Deployment
+kubectl rollout resume deployment/my-first-deployment
+
+# Check the Rollout History of a Deployment
+kubectl rollout history deployment/my-first-deployment  
+Observation: You should see a new version got created
+
+# Get list of ReplicaSets
+kubectl get rs
+Observation: You should see new ReplicaSet
